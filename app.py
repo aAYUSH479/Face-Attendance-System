@@ -460,5 +460,9 @@ def logout():
 if __name__ == "__main__":
     if FACE_MODEL is None:
         print("[WARN] Face model not loaded. /verify_face_and_qr and /detect_face will not work until MODEL_PATH is valid.")
-    app.run(host='0.0.0.0', port=8080, debug=False)
+
+    import os
+    port = int(os.environ.get("PORT", 5000))  # uses 5000 locally, cloud uses assigned port
+    app.run(host="0.0.0.0", port=port, debug=False)
+
 
