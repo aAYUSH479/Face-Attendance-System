@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Login - QR Attendance</title>
+    <style>
+        body {
+            font-family: Poppins, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: #eaf2ff;
+        }
+        form {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px #ccc;
+        }
+        input {
+            display: block;
+            margin: 10px 0;
+            padding: 10px;
+            width: 250px;
+        }
+        button {
+            padding: 10px;
+            width: 100%;
+            background: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .error { color: red; }
+    </style>
+</head>
+<body>
+    <form method="post">
+        <h2>Login</h2>
+        {% if error %}
+        <p class="error">{{ error }}</p>
+        {% endif %}
+        <input type="text" name="name" placeholder="Enter Name" required>
+        <input type="password" name="password" placeholder="Enter Password" required>
+        <button type="submit">Login</button>
+    </form>
+</body>
+</html>

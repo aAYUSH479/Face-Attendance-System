@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Dashboard</title>
+  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f6f9;
+      margin: 0;
+      padding: 0;
+      text-align: center;
+    }
+
+    h2 {
+      background: #007bff;
+      color: white;
+      padding: 15px;
+      margin: 0;
+    }
+
+    h3 {
+      margin-top: 20px;
+      color: #333;
+    }
+
+    #qr-reader,
+    #camera-container {
+      margin: 20px auto;
+      border: 3px solid #007bff;
+      border-radius: 10px;
+      background: white;
+      padding: 15px;
+      width: 500px;
+      max-width: 95%;
+      display: none;
+    }
+
+    #qr-result,
+    #face-result {
+      margin-top: 10px;
+      font-weight: bold;
+      color: #007bff;
+    }
+
+    table {
+      margin: 20px auto;
+      border-collapse: collapse;
+      width: 90%;
+      background: white;
+      box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    th, td {
+      padding: 12px 15px;
+      border: 1px solid #ddd;
+    }
+
+    th {
+      background: #007bff;
+      color: white;
+    }
+
+    tr:nth-child(even) { background: #f9f9f9; }
+    tr:hover { background: #f1f1f1; }
+
+    .btn-container { margin: 20px; }
+
+    a {
+      display: inline-block;
+      padding: 10px 18px;
+      margin: 5px;
+      border-radius: 5px;
+      text-decoration: none;
+      color: white;
+      font-weight: bold;
+      transition: 0.2s;
+    }
+
+    a[href="/export"] { background: #28a745; }
+    a[href="/logout"] { background: #dc3545; }
+    a[href="/clear_attendance"] { background: #ffc107; color: black; }
+
+    a:hover { opacity: 0.85; }
+
+    /* Toggle switch */
+    .switch-container {
+      margin-top: 15px;
+    }
+
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 60px;
+      height: 30px;
+    }
+
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: #ccc;
+      transition: 0.4s;
+      border-radius: 34px;
+    }
+
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 24px;
+      width: 24px;
+      left: 4px;
+      bottom: 3px;
+      background-color: white;
+      transition: 0.4s;
+      border-radius: 50%;
+    }
+
+    input:checked + .slider {
+      background-color: #007bff;
+    }
+
+    input:checked + .slider:before {
+      transform: translateX(28px);
+    }
+
+    #modeLabel {
+      margin-left: 10px;
+      font-weight: bold;
+      color: #007bff;
+    }
+
+    video {
+      width: 100%;
+      border-radius: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h2>Admin Dashboard</h2>
+
+  <div class="switch-container">
+    <label class="switch">
+      <input type="checkbox" id="modeSwitch">
+      <span class="slider"></span>
+    </label>
+    <span id="modeLabel">QR Mode</span>
+  </div>
+
+  <h3 id="scannerTitle">📷 Scan Student QR (Live Camera)</h3>
+
+  <div id="qr-reader"></div>
+
+  <div id="camera-container">
+    <video id="video" autoplay playsinline></video>
+    <canvas id="canvas" width="320" height="240" style="display:none;"></canvas>
+    <p id="face-result">Waiting for face...</p>
+  </div>
+
+  <p id="qr-result">Scanning...</p>
+
+  <h3>📊 Attendance Records</h3>
+  <table>
+    <tr>
+      <th>ID</th>
+      <th>Roll No</th>
+      <th>Name</th>
+      <th>Date</th>
+    </tr>
+    {% for r in records %}
+    <tr>
+      <td>{{ r[0] }}</td>
+      <td>{{ r[1] }}</td>
+      <td>{{ r[2] }}</td>
+      <td>{{ r[3] }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+
+  <div class="btn-container">
+    <a href="/export">⬇ Download Excel</a>
+    <a href="/clear_attendance" onclick="return confirm('Clear all attendance data?');">🧹 Clear Attendance</a>
+    <a href="/logout">🚪 Logout</a>
+  </div>
+
+  <script>
+let isFaceMode = false;
+let videoStream = null;
+let faceInterval = null;
+let qrScanner = null;
+let currentQRData = null; // store scanned QR data
+
+const qrDiv = document.getElementById("qr-reader");
+const camDiv = document.getElementById("camera-container");
+const modeLabel = document.getElementById("modeLabel");
+const scannerTitle = document.getElementById("scannerTitle");
+
+document.getElementById("modeSwitch").addEventListener("change", function() {
+  isFaceMode = this.checked;
+  modeLabel.innerText = isFaceMode ? "Face Mode" : "QR Mode";
+  scannerTitle.innerText = isFaceMode ? "😀 Face Recognition Mode" : "📷 Scan Student QR (Live Camera)";
+  stopEverything();
+  if (isFaceMode) startFaceMode();
+  else startQRMode();
+});
+
+// QR mode
+function startQRMode() {
+  qrDiv.style.display = "block";
+  camDiv.style.display = "none";
+  document.getElementById("qr-result").innerText = "Scanning...";
+  qrScanner = new Html5QrcodeScanner("qr-reader", { fps: 10, qrbox: 250 });
+  qrScanner.render(onScanSuccess);
+}
+
+function onScanSuccess(decodedText) {
+  try {
+    currentQRData = JSON.parse(decodedText);
+  } catch {
+    alert("Invalid QR data!");
+    return;
+  }
+  document.getElementById('qr-result').innerText = `Scanned: ${currentQRData.name} (${currentQRData.roll_no})`;
+  alert("✅ QR Scanned. Now switch to Face Mode to verify student.");
+}
+
+// Face recognition mode
+function startFaceMode() {
+  qrDiv.style.display = "none";
+  camDiv.style.display = "block";
+  document.getElementById("face-result").innerText = "Activating camera...";
+
+  const video = document.getElementById("video");
+  const canvas = document.getElementById("canvas");
+  const ctx = canvas.getContext("2d");
+
+  navigator.mediaDevices.getUserMedia({ video: true })
+    .then(stream => {
+      videoStream = stream;
+      video.srcObject = stream;
+      document.getElementById("face-result").innerText = "Detecting face...";
+
+      faceInterval = setInterval(() => {
+        if (!currentQRData) {
+          document.getElementById("face-result").innerText = "⚠ Scan a QR first!";
+          return;
+        }
+
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const base64Image = canvas.toDataURL("image/jpeg");
+
+        verifyFaceAndQR(currentQRData, base64Image);
+      }, 3000);
+    })
+    .catch(() => {
+      document.getElementById("face-result").innerText = "Camera access denied.";
+    });
+}
+
+async function verifyFaceAndQR(qrData, base64Image) {
+  try {
+    const response = await fetch("/verify_face_and_qr", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        qr_data: JSON.stringify(qrData),
+        image: base64Image
+      })
+    });
+
+    const result = await response.json();
+    console.log(result);
+
+    document.getElementById("face-result").innerText = result.message;
+
+    if (result.status === "success") {
+      clearInterval(faceInterval);
+      stopEverything();
+      setTimeout(() => location.reload(), 1200);
+    }
+  } catch (err) {
+    console.error("Fetch error:", err);
+    document.getElementById("face-result").innerText = "Failed to send data to server.";
+  }
+}
+
+function stopEverything() {
+  if (videoStream) {
+    videoStream.getTracks().forEach(t => t.stop());
+    videoStream = null;
+  }
+  if (faceInterval) {
+    clearInterval(faceInterval);
+    faceInterval = null;
+  }
+  if (qrScanner) {
+    qrDiv.innerHTML = "";
+    qrScanner = null;
+  }
+}
+
+// Default start
+startQRMode();
+</script>
+
+</body>
+</html>

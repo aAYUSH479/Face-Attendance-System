@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Student Dashboard</title>
+    <style>
+        body {
+            font-family: Poppins, sans-serif;
+            text-align: center;
+            background: #f6fff5;
+            margin-top: 100px;
+        }
+        img {
+            margin-top: 20px;
+            border: 5px solid #007BFF;
+            border-radius: 10px;
+        }
+        a {
+            display: inline-block;
+            margin-top: 20px;
+            background: #dc3545;
+            color: white;
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 6px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Welcome, {{ student.name }}</h1>
+    <p><b>Roll No:</b> {{ student.roll_no }}</p>
+    <h3>Your Attendance QR Code</h3>
+    <img src="{{ qr_file }}" alt="Student QR" class="qr-image">
+    <br>
+    <a href="/logout">Logout</a>
+</body>
+</html>
