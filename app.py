@@ -458,7 +458,7 @@ def logout():
     return redirect(url_for("home"))
 
 if __name__ == "__main__":
-    # sanity: ensure model is loaded (log message already printed earlier)
     if FACE_MODEL is None:
         print("[WARN] Face model not loaded. /verify_face_and_qr and /detect_face will not work until MODEL_PATH is valid.")
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(host='0.0.0.0', port=8080, debug=False)
+
