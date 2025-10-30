@@ -1,0 +1,53 @@
+# Python cache and compiled files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environment
+venv/
+env/
+.venv/
+
+# Flask instance folder (contains uploads, logs, or config)
+instance/
+*.db
+*.sqlite3
+
+# Environment variables
+.env
+.env.*
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Jupyter notebooks checkpoints
+.ipynb_checkpoints
+
+# Log files
+*.log
+
+# Pytest cache
+.pytest_cache/
+
+# Build and distribution directories
+build/
+dist/
+*.egg-info/
+
+# IDE settings
+.vscode/
+.idea/
+
+# Temporary files
+*.tmp
+*.bak
+
+# Local data (if any)
+uploads/
+tmp/
+cache/
+
+# Ignore specific model/data folders (optional)
+models/
+data/
